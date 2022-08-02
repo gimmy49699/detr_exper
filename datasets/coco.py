@@ -145,6 +145,8 @@ def make_coco_transforms(image_set):
 
 
 def build(image_set, args):
+    # 首先要将自己的数据集转换为coco格式
+    # 此处要修改自己对应的数据集file path
     root = Path(args.coco_path)
     assert root.exists(), f'provided COCO path {root} does not exist'
     mode = 'instances'
