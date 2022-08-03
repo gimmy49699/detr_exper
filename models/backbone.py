@@ -142,8 +142,12 @@ class MyBackboneBase(nn.Module):
 
 class ConvDilateNet(nn.Module):
     """Dilated-CNN for backbone."""
-    def __init__(self, in_channels):
+    def __init__(self, in_channels, out_channels=None):
         super().__init__()
+
+        if out_channels is None:
+            out_channels = in_channels
+
         block_1 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=256, kernel_size=1),
             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, dilation=1),
@@ -166,7 +170,7 @@ class ConvDilateNet(nn.Module):
         )
 
         self.conv_blocks = nn.ModuleList([block_1, block_2, block_3])
-        self.project_layer = nn.Linear(512 * 3, in_channels)
+        self.project_layer = nn.Linear(512 * 3, out_channels)
 
     def forward(self, x):
         N, C, W, H = x.size()
@@ -183,7 +187,7 @@ class ConvDilateNet(nn.Module):
         return xs
 
 
-class Resnet_with_DilateConv(nn.Module):
+class ResnetWithDilateConv(nn.Module):
 
     def __init__(self, name: str,
                  train_backbone: bool,
@@ -213,7 +217,7 @@ class MyBackbone(MyBackboneBase):
                  return_interm_layers: bool,
                  dilation: bool):
         # pretrained=is_main_process() => 如果时main进程，则自动从官方载入预训练模型
-        backbone_left = Resnet_with_DilateConv(name, train_backbone, return_interm_layers, dilation)
+        backbone_left = ResnetWithDilateConv(name, train_backbone, return_interm_layers, dilation)
         backbone_right = getattr(torchvision.models, name)(
             replace_stride_with_dilation=[False, False, dilation],
             pretrained=is_main_process(), norm_layer=FrozenBatchNorm2d)
@@ -251,16 +255,16 @@ def build_backbone(args):
     model.num_channels = backbone.num_channels
     return model
 
-# #  modifications
+#  modifications
+# x = NestedTensor(torch.rand(2, 3, 200, 250), torch.rand(3, 200, 250))
+
+
+# model = Resnet_with_DilateConv(name='resnet50',
+#     train_backbone=True,
+#     return_interm_layers=False,
+#     dilation=False)
 #
-# x = NestedTensor(torch.rand(2, 3, 768, 768), torch.rand(3, 768, 768))
-#
-# # model = Resnet_with_DilateConv(name='resnet50',
-# #     train_backbone=True,
-# #     return_interm_layers=False,
-# #     dilation=False)
-#
-# # model = IntermediateLayerGetter(model, return_layers={'layer4':'0'})
+# model = IntermediateLayerGetter(model, return_layers={'layer4':'0'})
 # model = MyBackbone(
 #     name='resnet50',
 #     train_backbone=True,

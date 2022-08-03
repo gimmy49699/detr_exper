@@ -105,6 +105,9 @@ def get_args_parser():
     # ResNet + DilatedConv 框架
     parser.add_argument('--new_backbone', default=True, type=bool,
                         help='ResNet50 + 3 * DilatedConvLayer')
+
+    parser.add_argument('--detr_ckpt', action='store_true',
+                        help='Load detr checkpoint')
     return parser
 
 
@@ -184,6 +187,16 @@ def main(args):
             checkpoint = torch.load(args.resume, map_location='cpu')
         model_dict = model_without_ddp.state_dict()
         pretrained_dict = {k: v for k, v in checkpoint['model'].items() if (k in model_dict)}
+
+        if args.detr_ckpt and args.new_backbone:
+            for layer in checkpoint['model'].keys():
+                if layer.startswith("backbone.0.body"):
+                    _layer = layer.replace("backbone.0.body", "backbone.0.body.1")
+                    pretrained_dict[_layer] = checkpoint['model'][layer]
+
+                    __layer = layer.replace("backbone.0.body", "backbone.0.body.0.resnet")
+                    pretrained_dict[__layer] = checkpoint['model'][layer]
+
         # model_without_ddp.load_state_dict(checkpoint['model'])
         model_without_ddp.state_dict().update(pretrained_dict)
         if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
