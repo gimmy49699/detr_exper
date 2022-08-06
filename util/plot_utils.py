@@ -105,3 +105,13 @@ def plot_precision_recall(files, naming_scheme='iter'):
     axs[1].set_title('Scores / Recall')
     axs[1].legend(names)
     return fig, axs
+
+
+if __name__ == "__main__":
+
+    log_path = Path("./outputs/")
+    plot_logs(log_path)
+
+    eval_path = list(Path('./outputs/eval').glob('*.pth'))
+    fig, ax = plot_precision_recall(eval_path)
+    plt.savefig("recall_precision_plot.png")
